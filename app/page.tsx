@@ -1,25 +1,8 @@
-'use client'
+import games from "@/app/_config/games.json";
+import Home from "@/app/_ui/home";
 
-import styles from "@/app/page.module.css";
-import games from "@/app/games.json";
-import Link from "next/link";
-import Image from "next/image";
-
-export default function Home() {
+export default function HomePage() {
   return (
-    <main className="text-center mt-4">
-      <section className={styles.contentArea}>
-        {games.map((game, index) => (
-          <div
-            key={index}
-            className={`text-center relative ${styles[`top${index + 1}`]}`}
-          >
-            <Link href={`/${game.title}?src=${encodeURIComponent(game.src)}`}>
-              <Image src={game.img} alt={game.title} fill className="object-cover rounded-md" />
-            </Link>
-          </div>
-        ))}
-      </section>
-    </main>
+    <Home games={games} />
   );
 }
