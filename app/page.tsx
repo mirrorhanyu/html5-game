@@ -12,12 +12,10 @@ export default function Home() {
         {games.map((game, index) => (
           <div
             key={index}
-            className={`bg-blue-500 text-center relative ${styles[`top${index + 1}`]}`}
+            className={`text-center relative ${styles[`top${index + 1}`]}`}
           >
-            <Link 
-              href={`/${game.title}?src=${encodeURIComponent(game.src)}`}
-            >
-              <Image src={game.img} alt={game.title} fill className="object-cover" />
+            <Link href={`/${game.title}?src=${encodeURIComponent(game.src)}`}>
+              <Image src={game.img} alt={game.title} fill className="object-cover rounded-md" />
             </Link>
           </div>
         ))}
