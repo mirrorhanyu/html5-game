@@ -10,5 +10,35 @@
         "src": "https://games.builds.gamepix.com/40214/6907972064812990464/index.html?sid=e4515&lang=en&namespace=cut-the-rope-2",
         "img": "https://img.gamepix.com/games/cut-the-rope-2/cover/cut-the-rope-2.png?w=320&ar=16:10",
         "from": "https://www.gamepix.com/play/cut-the-rope-2"
+    },
+    {
+        "title": "Shell Shockers",
+        "src": "https://shellshock.io/",
+        "img": "https://img.gamepix.com/games/shell-shockers/cover/shell-shockers.png?w=320&ar=16:10",
+        "from": "https://www.gamepix.com/play/shell-shockers"
+    },
+    {
+        "title": "Dogeminer",
+        "src": "https://dogeminer.se",
+        "img": "https://img.gamepix.com/games/dogeminer/cover/dogeminer.png?w=320&ar=16:10",
+        "from": "https://www.gamepix.com/play/dogeminer"
+    },
+    {
+        "title": "Smash Karts",
+        "src": "https://smashkarts.io",
+        "img": "https://img.gamepix.com/games/smash-karts/cover/smash-karts.png?w=320&ar=16:10",
+        "from": "https://www.gamepix.com/play/smash-karts"
+    },
+    {
+        "title": "10x10!",
+        "src": "https://games.gamesplaza.com/ext/distribution/10x10/index.html?utm_referrer=max&bm.source=www.coolgames.com&dist.version=2",
+        "img": "https://img.gamepix.com/games/10x10/cover/10x10.png?w=320&ar=16:10",
+        "from": "https://www.gamepix.com/play/10x10"
+    },
+    {
+        "title": "Funny Battle Simulator 2",
+        "src": "https://app-181839.games.s3.yandex.net/181839/0v5hmn3gqcl7uiqbx4r3bqpsne2106hw_brotli/index.html?header=no&skip-guard=1&clid=2992416&sdk=%2Fsdk%2F_%2Fv2.5cf73eb558fe9189f1fa.js#origin=https%3A%2F%2Fyandex.com&app-id=181839&device-type=desktop",
+        "img": "https://img.gamepix.com/games/funny-battle-simulator-2/cover/funny-battle-simulator-2.png?w=320&ar=16:10",
+        "from": "https://www.gamepix.com/play/funny-battle-simulator-2"
     }
 ]
