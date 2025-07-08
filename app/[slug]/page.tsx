@@ -1,7 +1,8 @@
 import games from '@/app/_config/games.json'
 import { slugify } from '@/app/_util/slug';
+import Game from '@/app/_ui/game';
 
-export default async function Game({
+export default async function GamePage({
   params,
 }: {
   params: Promise<{ slug: string }>
@@ -15,12 +16,6 @@ export default async function Game({
   }
 
   return (
-    <div>
-      <h1>{game.title}</h1>
-      <iframe
-        src={`${game.src}`}
-        className="w-214 h-117"
-        allow="fullscreen; camera; focus-without-user-activation *; monetization; gamepad; keyboard-map *; xr-spatial-tracking; clipboard-write; web-share; accelerometer; magnetometer; gyroscope" />
-    </div>
+    <Game game={game} />
   )
 }
