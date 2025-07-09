@@ -21,21 +21,35 @@ type Breakpoint = 'lg' | 'md' | 'sm' | 'xs' | 'xxs';
 export default function Home({ games }: HomeProps) {
 
   const columnNumber = { lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 }
+  const rowHeight = 30;
+  const aspectRatio = 10 / 16;
 
   const generateLayouts = () => {
     const times = [...Array(games.length)];
-    const widths: Record<Breakpoint, number> = { lg: 2, md: 4, sm: 6, xs: 12, xxs: 12 };
+    const widths: Record<Breakpoint, number> = { lg: 2, md: 4, sm: 6, xs: 12, xxs: 12 }; 
+
+    const containerWidths: Record<Breakpoint, number> = {
+      lg: 1200,
+      md: 996, 
+      sm: 768, 
+      xs: 480, 
+      xxs: 320 
+    };
+
     return Object.keys(widths).reduce((memo: Layouts, breakpoint) => {
       const bp = breakpoint as Breakpoint;
-      const width = widths[bp];
+      const colWidth = widths[bp];
       const cols = columnNumber![bp];
-
+      const pixelWidthPerGridUnit = containerWidths[bp] / cols;
+      const itemPixelWidth = pixelWidthPerGridUnit * colWidth;
+      const itemPixelHeight = itemPixelWidth * aspectRatio;
+      const itemGridHeight = Math.ceil(itemPixelHeight / rowHeight);
       memo[bp] = [
         ...times.map((_, i): Layout => ({
-          x: (i * width) % cols,
+          x: (i * colWidth) % cols,
           y: 0,
-          w: width,
-          h: 4,
+          w: colWidth,
+          h: itemGridHeight,
           i: String(i)
         }))
       ];
@@ -49,9 +63,9 @@ export default function Home({ games }: HomeProps) {
         className="layout"
         layouts={generateLayouts()}
         cols={columnNumber}
-        rowHeight={30}
+        rowHeight={rowHeight}
         isDraggable={false}
-        isResizable={true}
+        isResizable={false}
       >
         {games.map((game, index) => (
           <div key={index} className="text-center">
