@@ -4,8 +4,8 @@
 @import "react-resizable/css/styles.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #060010;
+  --foreground: #FFFFFF;
 }
 
 @theme inline {
@@ -17,14 +17,13 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #060010;
+    --foreground: #FFFFFF;
   }
 }
 
 body {
-  background: #83ffe7 url("/bg.svg") no-repeat center center fixed;
-  background-size: cover;
+  background-color: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
