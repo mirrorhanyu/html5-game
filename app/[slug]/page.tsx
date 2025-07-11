@@ -16,6 +16,6 @@ export default async function GamePage({
   }
 
   return (
-    <Game game={game} />
+    <Game game={game} games={games} />
   )
 }
