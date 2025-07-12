@@ -22,9 +22,8 @@ export interface GameProps {
 
 export default function Game({ game, games }: GameProps) {
   return (
-    <div className="m-4 w-full grid grid-cols-12 gap-4">
-
-      <div className="col-span-12 md:col-span-9 flex flex-col grid-rows-1">
+    <div className="grid grid-cols-12 gap-4 p-4">
+      <div className="row-start-1 col-span-12 md:col-span-9 flex flex-col">
         <iframe
           src={`${game.src}`}
           className="w-full aspect-[839/472]"
@@ -49,11 +48,7 @@ export default function Game({ game, games }: GameProps) {
         </div>
       </div>
 
-      <div className="bg-[oklch(1_0_0)] mt-4 px-4 grid-rows-2 col-span-12 md:col-span-9">
-        <article className="mt-4 prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: game.detail }} />
-      </div>
-
-      <div className="col-span-3 col-start-10 hidden md:block">
+      <div className="row-start-1 row-span-2 col-span-3 col-start-10 hidden md:block">
         <div className="grid grid-cols-2 gap-2">
           {games
             .sort(() => Math.random() - 0.5)
@@ -67,6 +62,11 @@ export default function Game({ game, games }: GameProps) {
             ))}
         </div>
       </div>
+
+      <div className="row-start-2 bg-[oklch(1_0_0)] col-span-12 md:col-span-9 px-4 py-2">
+        <article className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: game.detail }} />
+      </div>
+
     </div>
   )
 }
