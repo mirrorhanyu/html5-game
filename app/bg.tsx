@@ -1,215 +1,173 @@
-'use client';
+'use client'
 
-import { useEffect, useRef } from "react";
-import { Renderer, Program, Mesh, Color, Triangle } from "ogl";
+import React, { useRef, useEffect } from "react";
 
-const VERT = `#version 300 es
-in vec2 position;
-void main() {
-  gl_Position = vec4(position, 0.0, 1.0);
-}
-`;
+type CanvasStrokeStyle = string | CanvasGradient | CanvasPattern;
 
-const FRAG = `#version 300 es
-precision highp float;
-
-uniform float uTime;
-uniform float uAmplitude;
-uniform vec3 uColorStops[3];
-uniform vec2 uResolution;
-uniform float uBlend;
-
-out vec4 fragColor;
-
-vec3 permute(vec3 x) {
-  return mod(((x * 34.0) + 1.0) * x, 289.0);
+interface GridOffset {
+  x: number;
+  y: number;
 }
 
-float snoise(vec2 v){
-  const vec4 C = vec4(
-      0.211324865405187, 0.366025403784439,
-      -0.577350269189626, 0.024390243902439
-  );
-  vec2 i  = floor(v + dot(v, C.yy));
-  vec2 x0 = v - i + dot(i, C.xx);
-  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-  vec4 x12 = x0.xyxy + C.xxzz;
-  x12.xy -= i1;
-  i = mod(i, 289.0);
-
-  vec3 p = permute(
-      permute(i.y + vec3(0.0, i1.y, 1.0))
-    + i.x + vec3(0.0, i1.x, 1.0)
-  );
-
-  vec3 m = max(
-      0.5 - vec3(
-          dot(x0, x0),
-          dot(x12.xy, x12.xy),
-          dot(x12.zw, x12.zw)
-      ), 
-      0.0
-  );
-  m = m * m;
-  m = m * m;
-
-  vec3 x = 2.0 * fract(p * C.www) - 1.0;
-  vec3 h = abs(x) - 0.5;
-  vec3 ox = floor(x + 0.5);
-  vec3 a0 = x - ox;
-  m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
-
-  vec3 g;
-  g.x  = a0.x  * x0.x  + h.x  * x0.y;
-  g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-  return 130.0 * dot(m, g);
-}
-
-struct ColorStop {
-  vec3 color;
-  float position;
-};
-
-#define COLOR_RAMP(colors, factor, finalColor) {              \
-  int index = 0;                                            \
-  for (int i = 0; i < 2; i++) {                               \
-     ColorStop currentColor = colors[i];                    \
-     bool isInBetween = currentColor.position <= factor;    \
-     index = int(mix(float(index), float(i), float(isInBetween))); \
-  }                                                         \
-  ColorStop currentColor = colors[index];                   \
-  ColorStop nextColor = colors[index + 1];                  \
-  float range = nextColor.position - currentColor.position; \
-  float lerpFactor = (factor - currentColor.position) / range; \
-  finalColor = mix(currentColor.color, nextColor.color, lerpFactor); \
-}
-
-void main() {
-  vec2 uv = gl_FragCoord.xy / uResolution;
-  
-  ColorStop colors[3];
-  colors[0] = ColorStop(uColorStops[0], 0.0);
-  colors[1] = ColorStop(uColorStops[1], 0.5);
-  colors[2] = ColorStop(uColorStops[2], 1.0);
-  
-  vec3 rampColor;
-  COLOR_RAMP(colors, uv.x, rampColor);
-  
-  float height = snoise(vec2(uv.x * 2.0 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
-  height = exp(height);
-  height = (uv.y * 2.0 - height + 0.2);
-  float intensity = 0.6 * height;
-  
-  float midPoint = 0.20;
-  float auroraAlpha = smoothstep(midPoint - uBlend * 0.5, midPoint + uBlend * 0.5, intensity);
-  
-  vec3 auroraColor = intensity * rampColor;
-  
-  fragColor = vec4(auroraColor * auroraAlpha, auroraAlpha);
-}
-`;
-
-interface AuroraProps {
-  colorStops?: string[];
-  amplitude?: number;
-  blend?: number;
-  time?: number;
+interface SquaresProps {
+  direction?: "diagonal" | "up" | "right" | "down" | "left";
   speed?: number;
+  borderColor?: CanvasStrokeStyle;
+  squareSize?: number;
+  hoverFillColor?: CanvasStrokeStyle;
 }
 
-export default function Aurora(props: AuroraProps) {
-  const {
-    colorStops = ["#5227FF", "#7cff67", "#5227FF"],
-    amplitude = 1.0,
-    blend = 0.5,
-  } = props;
-  const propsRef = useRef<AuroraProps>(props);
-  propsRef.current = props;
-
-  const ctnDom = useRef<HTMLDivElement>(null);
+const Squares: React.FC<SquaresProps> = ({
+  direction = "right",
+  speed = 1,
+  borderColor = "#999",
+  squareSize = 40,
+  hoverFillColor = "#222",
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const requestRef = useRef<number | null>(null);
+  const numSquaresX = useRef<number>(0);
+  const numSquaresY = useRef<number>(0);
+  const gridOffset = useRef<GridOffset>({ x: 0, y: 0 });
+  const hoveredSquareRef = useRef<GridOffset | null>(null);
 
   useEffect(() => {
-    const ctn = ctnDom.current;
-    if (!ctn) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
 
-    const renderer = new Renderer({
-      alpha: true,
-      premultipliedAlpha: true,
-      antialias: true,
-    });
-    const gl = renderer.gl;
-    gl.clearColor(0, 0, 0, 0);
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    gl.canvas.style.backgroundColor = "transparent";
+    const resizeCanvas = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      numSquaresX.current = Math.ceil(canvas.width / squareSize) + 1;
+      numSquaresY.current = Math.ceil(canvas.height / squareSize) + 1;
+    };
 
-    let program: Program | undefined = undefined;
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
 
-    function resize() {
-      if (!ctn) return;
-      const width = ctn.offsetWidth;
-      const height = ctn.offsetHeight;
-      renderer.setSize(width, height);
-      if (program) {
-        program.uniforms.uResolution.value = [width, height];
+    const drawGrid = () => {
+      if (!ctx) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const startX = Math.floor(gridOffset.current.x / squareSize) * squareSize;
+      const startY = Math.floor(gridOffset.current.y / squareSize) * squareSize;
+
+      for (let x = startX; x < canvas.width + squareSize; x += squareSize) {
+        for (let y = startY; y < canvas.height + squareSize; y += squareSize) {
+          const squareX = x - (gridOffset.current.x % squareSize);
+          const squareY = y - (gridOffset.current.y % squareSize);
+
+          if (
+            hoveredSquareRef.current &&
+            Math.floor((x - startX) / squareSize) ===
+              hoveredSquareRef.current.x &&
+            Math.floor((y - startY) / squareSize) === hoveredSquareRef.current.y
+          ) {
+            ctx.fillStyle = hoverFillColor;
+            ctx.fillRect(squareX, squareY, squareSize, squareSize);
+          }
+
+          ctx.strokeStyle = borderColor;
+          ctx.strokeRect(squareX, squareY, squareSize, squareSize);
+        }
       }
-    }
-    window.addEventListener("resize", resize);
 
-    const geometry = new Triangle(gl);
-    if (geometry.attributes.uv) {
-      delete (geometry.attributes as Record<string, unknown>).uv;
-    }
+      const gradient = ctx.createRadialGradient(
+        canvas.width / 2,
+        canvas.height / 2,
+        0,
+        canvas.width / 2,
+        canvas.height / 2,
+        Math.sqrt(canvas.width ** 2 + canvas.height ** 2) / 2
+      );
+      gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+      gradient.addColorStop(1, "#060010");
 
-    const colorStopsArray = colorStops.map((hex) => {
-      const c = new Color(hex);
-      return [c.r, c.g, c.b];
-    });
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    };
 
-    program = new Program(gl, {
-      vertex: VERT,
-      fragment: FRAG,
-      uniforms: {
-        uTime: { value: 0 },
-        uAmplitude: { value: amplitude },
-        uColorStops: { value: colorStopsArray },
-        uResolution: { value: [ctn.offsetWidth, ctn.offsetHeight] },
-        uBlend: { value: blend },
-      },
-    });
+    const updateAnimation = () => {
+      const effectiveSpeed = Math.max(speed, 0.1);
+      switch (direction) {
+        case "right":
+          gridOffset.current.x =
+            (gridOffset.current.x - effectiveSpeed + squareSize) % squareSize;
+          break;
+        case "left":
+          gridOffset.current.x =
+            (gridOffset.current.x + effectiveSpeed + squareSize) % squareSize;
+          break;
+        case "up":
+          gridOffset.current.y =
+            (gridOffset.current.y + effectiveSpeed + squareSize) % squareSize;
+          break;
+        case "down":
+          gridOffset.current.y =
+            (gridOffset.current.y - effectiveSpeed + squareSize) % squareSize;
+          break;
+        case "diagonal":
+          gridOffset.current.x =
+            (gridOffset.current.x - effectiveSpeed + squareSize) % squareSize;
+          gridOffset.current.y =
+            (gridOffset.current.y - effectiveSpeed + squareSize) % squareSize;
+          break;
+        default:
+          break;
+      }
 
-    const mesh = new Mesh(gl, { geometry, program });
-    ctn.appendChild(gl.canvas);
+      drawGrid();
+      requestRef.current = requestAnimationFrame(updateAnimation);
+    };
 
-    let animateId = 0;
-    const update = (t: number) => {
-      animateId = requestAnimationFrame(update);
-      const { time = t * 0.01, speed = 1.0 } = propsRef.current;
-      if (program) {
-        program.uniforms.uTime.value = time * speed * 0.1;
-        program.uniforms.uAmplitude.value = propsRef.current.amplitude ?? 1.0;
-        program.uniforms.uBlend.value = propsRef.current.blend ?? blend;
-        const stops = propsRef.current.colorStops ?? colorStops;
-        program.uniforms.uColorStops.value = stops.map((hex: string) => {
-          const c = new Color(hex);
-          return [c.r, c.g, c.b];
-        });
-        renderer.render({ scene: mesh });
+    const handleMouseMove = (event: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+
+      const startX = Math.floor(gridOffset.current.x / squareSize) * squareSize;
+      const startY = Math.floor(gridOffset.current.y / squareSize) * squareSize;
+
+      const hoveredSquareX = Math.floor(
+        (mouseX + gridOffset.current.x - startX) / squareSize
+      );
+      const hoveredSquareY = Math.floor(
+        (mouseY + gridOffset.current.y - startY) / squareSize
+      );
+
+      if (
+        !hoveredSquareRef.current ||
+        hoveredSquareRef.current.x !== hoveredSquareX ||
+        hoveredSquareRef.current.y !== hoveredSquareY
+      ) {
+        hoveredSquareRef.current = { x: hoveredSquareX, y: hoveredSquareY };
       }
     };
-    animateId = requestAnimationFrame(update);
 
-    resize();
+    const handleMouseLeave = () => {
+      hoveredSquareRef.current = null;
+    };
+
+    canvas.addEventListener("mousemove", handleMouseMove);
+    canvas.addEventListener("mouseleave", handleMouseLeave);
+    requestRef.current = requestAnimationFrame(updateAnimation);
 
     return () => {
-      cancelAnimationFrame(animateId);
-      window.removeEventListener("resize", resize);
-      if (ctn && gl.canvas.parentNode === ctn) {
-        ctn.removeChild(gl.canvas);
-      }
-      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      window.removeEventListener("resize", resizeCanvas);
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      canvas.removeEventListener("mousemove", handleMouseMove);
+      canvas.removeEventListener("mouseleave", handleMouseLeave);
     };
-  }, [amplitude]);
+  }, [direction, speed, borderColor, hoverFillColor, squareSize]);
 
-  return <div ref={ctnDom} className="aurora-container fixed top-0 bottom-0 w-full h-full -z-1" />;
-}
+  return (
+    <canvas
+      ref={canvasRef}
+      className="w-full h-full border-none block fixed top-0 bottom-0 -z-1"
+    ></canvas>
+  );
+};
+
+export default Squares;
