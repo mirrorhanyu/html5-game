@@ -58,7 +58,7 @@ export default function Home({ games }: HomeProps) {
   }
 
   return (
-    <main className="text-center mt-4">
+    <main className="text-center p-2">
       <ResponsiveReactGridLayout
         className="layout"
         layouts={generateLayouts()}
